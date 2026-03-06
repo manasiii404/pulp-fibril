@@ -246,10 +246,13 @@ class HungarianMatcher(nn.Module):
 
             # ── Combined cost matrix ──────────────────────────────────
             C = (
-                self.cost_class * cost_class.cpu()
-                + self.cost_mask  * cost_mask_matrix.cpu()
-                + self.cost_dice  * cost_dice_matrix.cpu()
+                self.cost_class * cost_class.cpu().float()
+                + self.cost_mask  * cost_mask_matrix.cpu().float()
+                + self.cost_dice  * cost_dice_matrix.cpu().float()
             ).numpy()   # (Q, N)
+
+            # Prevent scipy crashes in FP16 by replacing NaNs and Infs
+            C = np.nan_to_num(C, nan=100.0, posinf=100.0, neginf=-100.0)
 
             # ── Solve assignment (Hungarian algorithm) ────────────────
             q_idx, gt_idx = linear_sum_assignment(C)
