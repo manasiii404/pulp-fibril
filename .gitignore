@@ -1,0 +1,19 @@
+# Environment
+venv/
+.env
+__pycache__/
+*.pyc
+
+# Dataset (Huge, do not upload to GitHub!)
+data/synthetic/
+data/real/
+*.zip
+
+# Model Checkpoints (Huge!)
+checkpoints/
+*.pth
+
+# Outputs/Logs
+outputs/
+logs/
+err.log

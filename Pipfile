@@ -1,0 +1,40 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+# ── Core Deep Learning ─────────────────────────────────────────────────────
+torch = ">=2.1.0"
+torchvision = ">=0.16.0"
+
+# ── Swin-Transformer (pre-trained models) ────────────────────────────────
+timm = ">=0.9.12"
+
+# ── Image Processing ──────────────────────────────────────────────────────
+opencv-python = ">=4.8.0"
+scikit-image = ">=0.21.0"
+Pillow = ">=10.0.0"
+
+# ── Augmentation ─────────────────────────────────────────────────────────
+albumentations = ">=1.3.1"
+
+# ── Graph / Math ─────────────────────────────────────────────────────────
+networkx = ">=3.1"
+scipy = ">=1.11.0"
+numpy = ">=1.24.0"
+
+# ── Utilities ─────────────────────────────────────────────────────────────
+tqdm = ">=4.66.0"
+matplotlib = ">=3.7.0"
+pandas = ">=2.0.0"
+
+# ── Data / ML ─────────────────────────────────────────────────────────────
+einops = ">=0.7.0"
+
+[dev-packages]
+ipykernel = "*"
+jupyter = "*"
+
+[requires]
+python_version = "3.10"
