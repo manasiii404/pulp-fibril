@@ -74,13 +74,30 @@ def postprocess_outputs(
     ).squeeze(0)   # (Q, H_orig, W_orig)
 
     # Filter: keep queries with score > threshold and non-empty masks
+    # Also apply basic NMS (IoU < 0.8) to remove duplicate overlapping queries
     instance_masks = []
-    for q in range(scores.shape[0]):
+    
+    # Sort queries by score descending for NMS
+    sorted_indices = torch.argsort(scores, descending=True)
+    
+    for q in sorted_indices.tolist():
         if scores[q].item() < score_threshold:
             continue
+            
         mask_bin = (masks_up[q] > 0.5).cpu().numpy().astype(np.uint8) * 255
         if mask_bin.sum() > 100:   # Skip tiny predictions
-            instance_masks.append(mask_bin)
+            
+            # Check overlap (IoU) with already accepted masks
+            is_dup = False
+            for acc_mask in instance_masks:
+                inter = np.logical_and(mask_bin, acc_mask).sum()
+                union = np.logical_or(mask_bin, acc_mask).sum()
+                if union > 0 and (inter / union) > 0.80:
+                    is_dup = True
+                    break
+                    
+            if not is_dup:
+                instance_masks.append(mask_bin)
 
     return instance_masks
 

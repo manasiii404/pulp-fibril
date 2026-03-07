@@ -173,8 +173,8 @@ def skeleton_to_graph(skeleton: np.ndarray) -> nx.Graph:
             if (ny, nx_) in special_pts:
                 return path, (ny, nx_)  # Hit another node
 
-            cy, cx = ny, nx_
-            py, px = cy, cx  # Wrong — should be previous
+            py, px = cy, cx    # Save current as previous
+            cy, cx = ny, nx_   # Update current to new pixel
 
         return path, None
 
@@ -232,7 +232,12 @@ def compute_edge_metrics(
             start = np.array([path[0][0],  path[0][1]])
             end   = np.array([path[-1][0], path[-1][1]])
             euclidean_dist = np.linalg.norm(end - start) * px_to_um
-            tortuosity = length_um / max(euclidean_dist, 1e-6)
+            
+            # Prevent extreme tortuosity on closed loops (start ≈ end)
+            if euclidean_dist < 1e-3:
+                tortuosity = 1.0
+            else:
+                tortuosity = length_um / euclidean_dist
         else:
             tortuosity = 1.0
 
