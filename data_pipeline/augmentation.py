@@ -41,9 +41,7 @@ def get_train_transforms(image_size: int):
             A.PadIfNeeded(
                 min_height=image_size, 
                 min_width=image_size, 
-                border_mode=cv2.BORDER_CONSTANT, 
-                value=0, 
-                mask_value=0
+                border_mode=cv2.BORDER_CONSTANT
             ),
 
             # ── Pixel-level Transforms ────────────────────────────────
@@ -102,8 +100,7 @@ def get_val_transforms(image_size: int):
         A.PadIfNeeded(
             min_height=None, min_width=None, 
             pad_height_divisor=32, pad_width_divisor=32, 
-            border_mode=cv2.BORDER_CONSTANT, 
-            value=0, mask_value=0
+            border_mode=cv2.BORDER_CONSTANT
         ),
         A.ToFloat(max_value=255.0),
         ToTensorV2(),

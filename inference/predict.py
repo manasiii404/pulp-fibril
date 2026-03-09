@@ -170,7 +170,7 @@ def predict(
         "backbone": "swin_tiny",
         "pretrained": False,      # Don't re-download during inference
         "num_queries": 25,
-        "hidden_dim": 224,
+        "hidden_dim": 256,
         "nheads": 8,
         "dec_layers": 3,
         "num_classes": 1,

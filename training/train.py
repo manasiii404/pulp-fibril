@@ -60,7 +60,7 @@ DEBUG_CONFIG = {
     "backbone": "swin_tiny",
     "pretrained": False,      # False for CPU debug (skip download)
     "num_queries": 10,
-    "hidden_dim": 128,
+    "hidden_dim": 256,
     "nheads": 4,
     "dec_layers": 2,
     "num_classes": 1,

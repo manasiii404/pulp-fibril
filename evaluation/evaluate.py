@@ -158,11 +158,11 @@ def evaluate(
     
     config = ckpt.get("config", {
         "backbone": "swin_tiny", "pretrained": False,
-        "num_queries": 25, "hidden_dim": 224,
+        "num_queries": 25, "hidden_dim": 256,
         "nheads": 8, "dec_layers": 3, "num_classes": 1,
     })
     config["pretrained"] = False
-    train_size = config.get("image_size", 224)
+    train_size = config.get("image_size", 256)
 
     # ── Data ───────────────────────────────────────────────────────────────────
     _, _, test_loader = get_dataloaders(
