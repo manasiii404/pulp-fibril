@@ -15,7 +15,7 @@ import cv2
 # Training Augmentations
 # ─────────────────────────────────────────────────────────────────────────────
 
-def get_train_transforms(image_size: int = 512):
+def get_train_transforms(image_size: int):
     return A.Compose(
         [
             # ── Spatial Transforms ────────────────────────────────────
@@ -36,16 +36,15 @@ def get_train_transforms(image_size: int = 512):
             # Grid distortion — simulates optical aberrations
             A.GridDistortion(num_steps=5, distort_limit=0.15, p=0.3),
 
-            # Random crop — avoids black corners after rotation
-            # NOTE: v2 uses size=(h,w) instead of height=, width=
-            A.RandomResizedCrop(
-                size=(image_size, image_size),
-                scale=(0.7, 1.0),
-                ratio=(0.9, 1.1),
-                p=0.4,
+            # ── Scale and Pad: Keep aspect ratio, consider whole image ──
+            A.LongestMaxSize(max_size=image_size, p=1.0),
+            A.PadIfNeeded(
+                min_height=image_size, 
+                min_width=image_size, 
+                border_mode=cv2.BORDER_CONSTANT, 
+                value=0, 
+                mask_value=0
             ),
-            # NOTE: always_apply removed in v2 — just use p=1.0
-            A.Resize(height=image_size, width=image_size, p=1.0),
 
             # ── Pixel-level Transforms ────────────────────────────────
             A.RandomBrightnessContrast(
@@ -78,8 +77,10 @@ def get_train_transforms(image_size: int = 512):
                 A.Equalize(p=1.0),
             ], p=0.3),
 
-            # Normalize to [0,1] for grayscale
-            A.Normalize(mean=(0.485,), std=(0.229,)),
+            # ToTensorV2 internally handles / 255.0 for uint8 if normalization is absent,
+            # but usually it doesn't divide unless Normalize is used. 
+            # We explicitly scale down to 0-1 values.
+            A.ToFloat(max_value=255.0),
             ToTensorV2(),
         ],
         additional_targets={"mask": "mask"},
@@ -90,15 +91,25 @@ def get_train_transforms(image_size: int = 512):
 # Validation / Test Augmentations
 # ─────────────────────────────────────────────────────────────────────────────
 
-def get_val_transforms(image_size: int = 512):
-    return A.Compose(
-        [
-            A.Resize(height=image_size, width=image_size, p=1.0),
-            A.Normalize(mean=(0.485,), std=(0.229,)),
-            ToTensorV2(),
-        ],
-        additional_targets={"mask": "mask"},
-    )
+def get_val_transforms(image_size: int):
+    transforms = []
+    
+    if image_size is not None and image_size > 0:
+        transforms.append(A.LongestMaxSize(max_size=image_size, p=1.0))
+        
+    transforms.extend([
+        # Pad to nearest multiple of 32 for Swin compatibility natively
+        A.PadIfNeeded(
+            min_height=None, min_width=None, 
+            pad_height_divisor=32, pad_width_divisor=32, 
+            border_mode=cv2.BORDER_CONSTANT, 
+            value=0, mask_value=0
+        ),
+        A.ToFloat(max_value=255.0),
+        ToTensorV2(),
+    ])
+    
+    return A.Compose(transforms, additional_targets={"mask": "mask"})
 
 
 # ─────────────────────────────────────────────────────────────────────────────

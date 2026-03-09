@@ -90,8 +90,10 @@ def postprocess_outputs(
             # Check overlap (IoU) with already accepted masks
             is_dup = False
             for acc_mask in instance_masks:
-                inter = np.logical_and(mask_bin, acc_mask).sum()
-                union = np.logical_or(mask_bin, acc_mask).sum()
+                m1_bool = mask_bin > 0
+                m2_bool = acc_mask > 0
+                inter = np.logical_and(m1_bool, m2_bool).sum()
+                union = np.logical_or(m1_bool, m2_bool).sum()
                 if union > 0 and (inter / union) > 0.80:
                     is_dup = True
                     break
@@ -161,18 +163,23 @@ def predict(
     print("[3/4] Running Mask2Former instance segmentation...")
 
     # Build model and load checkpoint
-    config = {
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=True)
+    
+    # Extract config dynamically from the checkpoint so size is agnostic
+    config = ckpt.get("config", {
         "backbone": "swin_tiny",
         "pretrained": False,      # Don't re-download during inference
-        "num_queries": 50,
-        "hidden_dim": 256,
+        "num_queries": 25,
+        "hidden_dim": 224,
         "nheads": 8,
-        "dec_layers": 6,
+        "dec_layers": 3,
         "num_classes": 1,
-    }
+    })
+    
+    # Override pretrained so we don't accidentally try to download weights during inference
+    config["pretrained"] = False
+    
     model = build_model(config, device=device)
-
-    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=True)
     model.load_state_dict(ckpt["model_state"])
     model.eval()
     print(f"      Checkpoint loaded: epoch {ckpt.get('epoch', '?')}, "
@@ -181,20 +188,37 @@ def predict(
     # Preprocess: normalize, add batch + channel dims
     img_norm = sr_image.astype(np.float32) / 255.0
     img_tensor = torch.from_numpy(img_norm[None, None]).to(device)  # (1, 1, H, W)
-
     orig_h, orig_w = sr_image.shape
+
+    # ── Dynamic Size Handling ──
+    # Swin backbone requires H and W to be multiples of 32.
+    # We dynamically pad the image instead of squishing it to preserve aspect ratio.
+    pad_h = (32 - orig_h % 32) % 32
+    pad_w = (32 - orig_w % 32) % 32
+    
+    # F.pad format is (padding_left, padding_right, padding_top, padding_bottom)
+    img_tensor_pad = F.pad(img_tensor, (0, pad_w, 0, pad_h), mode="constant", value=0)
 
     with torch.no_grad():
         with torch.autocast(device_type="cuda", enabled=(device == "cuda")):
-            outputs = model(img_tensor)
+            outputs = model(img_tensor_pad)
 
-    # Convert outputs to binary masks
-    instance_masks = postprocess_outputs(
+    # Convert outputs to binary masks, keeping padded size first to allow clean interpolation mathematically
+    padded_h = orig_h + pad_h
+    padded_w = orig_w + pad_w
+    padded_masks = postprocess_outputs(
         outputs["pred_logits"],
         outputs["pred_masks"],
-        orig_size=(orig_h, orig_w),
+        orig_size=(padded_h, padded_w),
         score_threshold=score_threshold,
     )
+    
+    # Crop the padding off the generated masks to return precisely the original image view
+    instance_masks = []
+    for pm in padded_masks:
+        cropped = pm[:orig_h, :orig_w]
+        if cropped.sum() > 50:  # Valid mask after crop
+            instance_masks.append(cropped)
     print(f"      Detected {len(instance_masks)} fibril instances")
 
     # ── Stage 4: Skeletonization + Metrics ───────────────────────────────────

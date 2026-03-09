@@ -80,7 +80,8 @@ class SwinBackbone(nn.Module):
             pretrained=pretrained,
             features_only=True,        # Return intermediate features
             out_indices=out_indices,   # Which stages
-            dynamic_img_size=True,     # Accept any H×W (removes the 224 assertion)
+            dynamic_img_size=True,     # Accept any H×W (recalculates pos bias)
+            strict_img_size=False,     # Disable runtime size assertions for non-square paddings
         )
 
         # ── Adapt first patch embedding for grayscale input ──────────

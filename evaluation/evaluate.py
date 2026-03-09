@@ -41,16 +41,20 @@ from quantification.skeletonize import mask_to_metrics
 
 def compute_iou(mask_pred: np.ndarray, mask_gt: np.ndarray) -> float:
     """Compute Intersection over Union between two binary masks."""
-    inter = np.logical_and(mask_pred > 0, mask_gt > 0).sum()
-    union = np.logical_or(mask_pred > 0, mask_gt > 0).sum()
+    m1 = mask_pred > 0
+    m2 = mask_gt > 0
+    inter = np.logical_and(m1, m2).sum()
+    union = np.logical_or(m1, m2).sum()
     return float(inter) / float(max(union, 1))
 
 
 def compute_dice(mask_pred: np.ndarray, mask_gt: np.ndarray) -> float:
     """Compute Dice coefficient between two binary masks."""
-    inter = np.logical_and(mask_pred > 0, mask_gt > 0).sum()
-    total = (mask_pred > 0).sum() + (mask_gt > 0).sum()
-    return (2.0 * inter) / max(total, 1)
+    m1 = mask_pred > 0
+    m2 = mask_gt > 0
+    inter = np.logical_and(m1, m2).sum()
+    total = m1.sum() + m2.sum()
+    return (2.0 * float(inter)) / float(max(total, 1))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -139,7 +143,7 @@ def evaluate(
     checkpoint_path: str,
     data_root: str,
     output_path: str,
-    image_size: int = 512,
+    image_size: int = 224,
     score_threshold: float = 0.5,
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
 ):
@@ -149,23 +153,27 @@ def evaluate(
     print(f"  Device:     {device}")
     print(f"{'='*60}\n")
 
+    # ── Model & Config ─────────────────────────────────────────────────────────
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=True)
+    
+    config = ckpt.get("config", {
+        "backbone": "swin_tiny", "pretrained": False,
+        "num_queries": 25, "hidden_dim": 224,
+        "nheads": 8, "dec_layers": 3, "num_classes": 1,
+    })
+    config["pretrained"] = False
+    train_size = config.get("image_size", 224)
+
     # ── Data ───────────────────────────────────────────────────────────────────
     _, _, test_loader = get_dataloaders(
         data_root=data_root,
-        image_size=image_size,
+        image_size=train_size,
         batch_size=1,
         num_workers=0,
     )
     print(f"[Eval] Test set: {len(test_loader)} images")
 
-    # ── Model ──────────────────────────────────────────────────────────────────
-    config = {
-        "backbone": "swin_tiny", "pretrained": False,
-        "num_queries": 50, "hidden_dim": 256,
-        "nheads": 8, "dec_layers": 6, "num_classes": 1,
-    }
     model = build_model(config, device=device)
-    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=True)
     model.load_state_dict(ckpt["model_state"])
     model.eval()
 
@@ -179,18 +187,33 @@ def evaluate(
         images = batch["images"].to(device)
         gt_masks_batch = batch["masks"]   # List[(N_i, H, W)]
 
-        with torch.autocast(device_type="cuda", enabled=(device=="cuda")):
-            outputs = model(images)
-
         H_orig, W_orig = images.shape[2], images.shape[3]
+        
+        # ── Dynamic Size Handling ──
+        pad_h = (32 - H_orig % 32) % 32
+        pad_w = (32 - W_orig % 32) % 32
+        images_pad = F.pad(images, (0, pad_w, 0, pad_h), mode="constant", value=0)
+
+        with torch.autocast(device_type="cuda", enabled=(device=="cuda")):
+            outputs = model(images_pad)
+
+        padded_h = H_orig + pad_h
+        padded_w = W_orig + pad_w
 
         for b in range(images.shape[0]):
-            pred_masks = postprocess_outputs(
+            padded_masks = postprocess_outputs(
                 outputs["pred_logits"][b:b+1],
                 outputs["pred_masks"][b:b+1],
-                orig_size=(H_orig, W_orig),
+                orig_size=(padded_h, padded_w),
                 score_threshold=score_threshold,
             )
+            
+            # Crop off the padding
+            pred_masks = []
+            for pm in padded_masks:
+                cropped = pm[:H_orig, :W_orig]
+                if cropped.sum() > 50:
+                    pred_masks.append(cropped)
             gt_mask_tensors = gt_masks_batch[b]  # (N, H, W)
             gt_masks = [
                 (gt_mask_tensors[i].numpy() * 255).astype(np.uint8)
