@@ -217,7 +217,10 @@ class FibrilDataset(Dataset):
         if boxes:
             boxes_tensor = torch.tensor(boxes, dtype=torch.float32)
             masks_tensor = masks_tensor[valid_indices]
-            labels_tensor = torch.ones(len(boxes), dtype=torch.int64)
+            # [CRITICAL FIX]: PyTorch classes are 0-indexed. Fibril is Class 0. 
+            # "No Object" is Class 1. 
+            # Using torch.ones() previously trained the network that every fibril was background!
+            labels_tensor = torch.zeros(len(boxes), dtype=torch.int64)
         else:
             boxes_tensor = torch.zeros((0, 4), dtype=torch.float32)
             masks_tensor = torch.zeros(
