@@ -1,0 +1,29 @@
+
+=======================================================
+  Pulp Fibril Prediction Pipeline
+  Image:    data\synthetic\images\00000.png
+  Device:   cpu
+=======================================================
+[1/4] Loaded image: (256, 256)
+[2/4] Skipping SR (CPU mode / disabled)
+[3/4] Running Mask2Former instance segmentation...
+[SwinBackbone] Adapted patch embed: 3→1 channels ✅
+[SwinBackbone] Loaded swin_tiny | pretrained=False | in_channels=1 | out_channels=[96, 192, 384, 768]
+
+[Model] FibrilMask2Former built ✅
+        Total params:     41.5M
+        Trainable params: 41.5M
+        Device:           cpu
+
+      Checkpoint loaded: epoch 9, val_loss=8.0972
+      [Debug] Top-5 query confidences: ['0.001', '0.001', '0.001', '0.001', '0.001']
+      Detected 0 fibril instances
+[4/4] Computing fibril metrics (skeletonization + GNN)...
+
+  ✅ Visualization saved: outputs\00000_segmented.png
+
+    ID |  Len(μm) |   Tort | Branch |     FI
+  ------------------------------------------
+  ✅ Report saved:        outputs\00000_report.csv
+=======================================================
+

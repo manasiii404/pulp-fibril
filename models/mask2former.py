@@ -135,6 +135,14 @@ class MaskedCrossAttentionLayer(nn.Module):
             # Our mask: 1=fibril region, 0=background
             # PyTorch convention: True = MASK OUT (ignore), so invert
             attn_mask_bool = ~attn_mask.bool()
+            
+            # [CRITICAL FIX] If a query has NO foreground pixels initially (random weights),
+            # the entire attn_mask_bool will be True. This causes PyTorch Softmax to divide by 0 
+            # and output NaN, permanently destroying model weights on batch #1.
+            # Fallback: if all pixels are True (ignored) for a query row, ignore the mask completely.
+            all_masked = attn_mask_bool.all(dim=-1, keepdim=True)  # (B*nhead, Q, 1)
+            attn_mask_bool = attn_mask_bool.masked_fill(all_masked, False)
+            
         else:
             attn_mask_bool = None
 

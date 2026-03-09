@@ -61,6 +61,10 @@ def postprocess_outputs(
     """
     # Compute class confidence scores: softmax → max over real classes (exclude "no object")
     scores = pred_logits[0].softmax(dim=-1)[:, :-1].max(dim=-1).values  # (Q,)
+    
+    # [DEBUG] Print the top 5 highest confidence score probabilities natively internally
+    top_scores, _ = torch.topk(scores, min(5, len(scores)))
+    print(f"      [Debug] Top-5 query confidences: {[f'{s.item():.3f}' for s in top_scores]}")
 
     # Binarize mask logits
     masks_sigmoid = pred_masks[0].sigmoid()  # (Q, H, W)

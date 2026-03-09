@@ -1,0 +1,12 @@
+[FibrilDataset] Split: train | Images:  188 | Size: 256×256
+[FibrilDataset] Split: val   | Images:   37 | Size: 256×256
+[FibrilDataset] Split: test  | Images:   25 | Size: 256×256
+Images shape: torch.Size([2, 1, 256, 256])
+Batch 0:
+  Masks shape:  torch.Size([4, 256, 256]) - max value: 1.0
+  Labels shape: torch.Size([4])
+  Boxes shape:  torch.Size([4, 4])
+Batch 1:
+  Masks shape:  torch.Size([2, 256, 256]) - max value: 1.0
+  Labels shape: torch.Size([2])
+  Boxes shape:  torch.Size([2, 4])
