@@ -35,6 +35,7 @@ from models.mask2former import build_model
 from quantification.skeletonize import mask_to_metrics
 from inference.report_generator import save_report
 from inference.visualize import visualize_predictions
+from inference.recommendation_engine import print_recommendation
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -253,6 +254,10 @@ def predict(
     report_path = str(output_path / f"{img_name}_report.csv")
     save_report(all_metrics, report_path)
     print(f"  ✅ Report saved:        {report_path}")
+    
+    # ── Stage 5: Industrial Recommendation ────────────────────────────────────
+    print_recommendation(all_metrics)
+    
     print(f"{'='*55}\n")
 
     return all_metrics

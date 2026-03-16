@@ -15,15 +15,41 @@
         Trainable params: 41.5M
         Device:           cpu
 
-      Checkpoint loaded: epoch 9, val_loss=8.0972
-      [Debug] Top-5 query confidences: ['0.001', '0.001', '0.001', '0.001', '0.001']
-      Detected 0 fibril instances
+      Checkpoint loaded: epoch 9, val_loss=9.6982
+      [Debug] Top-5 query confidences: ['0.978', '0.975', '0.972', '0.964', '0.703']
+      Detected 5 fibril instances
 [4/4] Computing fibril metrics (skeletonization + GNN)...
+      Fibril   0: len=21.5μm  tort=1.290  branch=0  FI=215.00
+      Fibril   1: len=161.5μm  tort=1.538  branch=67  FI=1615.00
+      Fibril   2: len=99.8μm  tort=1.445  branch=28  FI=997.50
+      Fibril   3: len=155.2μm  tort=1.456  branch=48  FI=1552.50
+      Fibril   4: len=98.0μm  tort=1.424  branch=20  FI=980.00
 
   ✅ Visualization saved: outputs\00000_segmented.png
 
     ID |  Len(μm) |   Tort | Branch |     FI
   ------------------------------------------
+     0 |    21.50 |  1.290 |      0 | 215.00
+     1 |   161.50 |  1.538 |     67 | 1615.00
+     2 |    99.75 |  1.445 |     28 | 997.50
+     3 |   155.25 |  1.456 |     48 | 1552.50
+     4 |    98.00 |  1.424 |     20 | 980.00
+
+  Summary: 5 fibrils | Avg Length=107.2μm | Avg FI=1072.00
   ✅ Report saved:        outputs\00000_report.csv
+
+======================================================
+🏭 INDUSTRIAL PULP REFINING RECOMMENDATION
+======================================================
+Batch Analysis (Based on 5 observed fibrils)
+
+▶ Average Fibrillation Index (FI): 1072.00
+▶ Current Status: 🔴 Over-Refined
+
+💡 ACTIONABLE RECOMMENDATION:
+WARNING: STOP IMMEDIATELY. Pulp is heavily over-refined. Energy is being wasted and fibers may be damaged.
+
+======================================================
+
 =======================================================
 
